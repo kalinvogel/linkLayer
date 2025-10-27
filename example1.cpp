@@ -44,29 +44,39 @@ void *protocol_loop(void *arg)
 //
 // Toy function to print something interesting when an IP frame arrives
 //
+
 void *ip_protocol_loop(void *arg)
 {
    octet buf[1500];
    event_kind event;
    int timer_no = 1;
 
-   // for fun, fire a timer each time we get a frame
-   while ( 1 )
+   while (1)
    {
       ip_queue.recv(&event, buf, sizeof(buf));
-      if ( event != TIMER )
+      if (event != TIMER)
       {
          printf("got an IP frame from %d.%d.%d.%d, queued timer %d\n",
-                  buf[12],buf[13],buf[14],buf[15],timer_no);
-         ip_queue.timer(10,timer_no);
+                buf[12], buf[13], buf[14], buf[15], timer_no);
+         ip_queue.timer(10, timer_no);
          timer_no++;
+
+         // Print first 42 bytes in hex
+         printf("First 42 bytes:\n");
+         for (int i = 0; i < 42; ++i)
+         {
+            printf("%02x ", buf[i]);
+            if ((i + 1) % 22 == 0) printf("\n"); // break line every 16 bytes
+         }
+         printf("\n");
       }
       else
       {
-         printf("timer %d fired\n",*(int *)buf);
+         printf("timer %d fired\n", *(int *)buf);
       }
    }
 }
+
 
 //
 // Toy function to print something interesting when an ARP frame arrives
@@ -94,7 +104,7 @@ pthread_t loop_thread, arp_thread, ip_thread;
 //
 int main()
 {
-   net.open_net("eth1");
+   net.open_net("enp0s3");
    pthread_create(&loop_thread,NULL,protocol_loop,NULL);
    pthread_create(&arp_thread,NULL,arp_protocol_loop,NULL);
    pthread_create(&ip_thread,NULL,ip_protocol_loop,NULL);
